@@ -60,13 +60,13 @@ def parse_args():
                                 default= os.path.join(os.path.dirname(os.path.abspath(__file__)),'config.yaml'), 
                                 help='config file')
     cmdline_parser.add_argument('--train', 
-                                default= False, 
+                                default= False,
                                 help='Train the diffusion model')
     cmdline_parser.add_argument('--detection', 
-                                default= False, 
+                                default= True,
                                 help='Detection anomalies')
     cmdline_parser.add_argument('--domain_adaptation', 
-                                default= False, 
+                                default= False,
                                 help='Domain adaptation')
     args, unknowns = cmdline_parser.parse_known_args()
     return args
@@ -77,7 +77,10 @@ if __name__ == "__main__":
     torch.cuda.empty_cache()
     args = parse_args()
     config = OmegaConf.load(args.config)
-    print("Class: ",config.data.category, "   w:", config.model.w, "   v:", config.model.v, "   load_chp:", config.model.load_chp,   "   feature extractor:", config.model.feature_extractor,"         w_DA: ",config.model.w_DA,"         DLlambda: ",config.model.DLlambda)
+    print("Class: ",config.data.category, "   w:", config.model.w, "   v:", config.model.v, "   load_chp:",
+          config.model.load_chp,   "   feature extractor:", config.model.feature_extractor,
+          "         w_DA: ",config.model.w_DA,
+          "         DLlambda: ",config.model.DLlambda)
     print(f'{config.model.test_trajectoy_steps=} , {config.data.test_batch_size=}')
     torch.manual_seed(42)
     np.random.seed(42)
