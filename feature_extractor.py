@@ -11,6 +11,10 @@ from reconstruction import *
 os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,2"
 
 def loss_fucntion(a, b, c, d, config):
+    # calculated between a [reconst_fe] and b[target_fe]
+    # calculated between c [target_frozen_fe] and b [target_fe]
+    # calculated between a [reconst_fe] and d [reconst_frozen_fe]
+    # reconst_fe, target_fe, target_frozen_fe, reconst_frozen_fe,
     cos_loss = torch.nn.CosineSimilarity()
     loss1 = 0
     loss2 = 0
@@ -61,7 +65,7 @@ def domain_adaptation(unet, config, fine_tune):
         num_workers=config.model.num_workers,
         drop_last=True,
     )   
-
+    # you are fine tunning training the network
     if fine_tune:      
         unet.eval()
         feature_extractor.train()
@@ -90,9 +94,7 @@ def domain_adaptation(unet, config, fine_tune):
 
                 target_frozen_fe = frozen_feature_extractor(target)
                 reconst_frozen_fe = frozen_feature_extractor(x0)
-                
-                
-
+                # This is very interesting idea in here !!!
                 loss = loss_fucntion(reconst_fe, target_fe, target_frozen_fe,reconst_frozen_fe, config)
                 optimizer.zero_grad()
                 loss.backward()
@@ -101,9 +103,9 @@ def domain_adaptation(unet, config, fine_tune):
             print(f"Epoch {epoch+1} | Loss: {loss.item()}")
             # if (epoch+1) % 5 == 0:
             torch.save(feature_extractor.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,f'feat{epoch+1}'))
-    else:
-        # it loads the domain adaption using checkpoiunt already saved. this can be just ignored  or removed
-
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,f'feat{config.model.DA_chp}'))#{config.model.DA_chp}            
-        feature_extractor.load_state_dict(checkpoint)  
+    # else:
+    #     # it loads the domain adaption using checkpoiunt already saved. this can be just ignored  or removed
+    #     # if you donot want to use domain adaption just remove this part
+    #     checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,f'feat{config.model.DA_chp}'))#{config.model.DA_chp}
+    #     feature_extractor.load_state_dict(checkpoint)
     return feature_extractor

@@ -8,6 +8,11 @@ from train import trainer
 from feature_extractor import * 
 from ddad import *
 os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,2"
+import wandb
+import random
+
+os.environ['CUDA_LAUNCH_BLOCKING']="1"
+os.environ['TORCH_USE_CUDA_DSA'] = "1"
 
 def build_model(config):
     if config.model.DDADS:
@@ -31,11 +36,10 @@ def train(config):
 
 def detection(config):
     unet = build_model(config)
-    checkpoint = torch.load(os.path.join(os.getcwd(), config.model.checkpoint_dir, config.data.category, str(config.model.load_chp)))
+    checkpoint = torch.load(os.path.join(os.getcwd(), config.model.checkpoint_dir, str(config.model.load_chp)))
     unet = torch.nn.DataParallel(unet)
     unet.load_state_dict(checkpoint)    
     unet.to(config.model.device)
-    checkpoint = torch.load(os.path.join(os.getcwd(), config.model.checkpoint_dir, config.data.category, str(config.model.load_chp)))
     unet.eval()
     ddad = DDAD(unet, config)
     ddad()
@@ -70,23 +74,36 @@ def parse_args():
                                 help='Domain adaptation')
     args, unknowns = cmdline_parser.parse_known_args()
     return args
-
-
+def seed_all(seed):
+    np.random.seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = True
     
 if __name__ == "__main__":
     torch.cuda.empty_cache()
     args = parse_args()
     config = OmegaConf.load(args.config)
+    print(config.data.data_dir)
     print("Class: ",config.data.category, "   w:", config.model.w, "   v:", config.model.v, "   load_chp:",
           config.model.load_chp,   "   feature extractor:", config.model.feature_extractor,
           "         w_DA: ",config.model.w_DA,
           "         DLlambda: ",config.model.DLlambda)
     print(f'{config.model.test_trajectoy_steps=} , {config.data.test_batch_size=}')
-    torch.manual_seed(42)
-    np.random.seed(42)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(42)
+    seed = 42
+    seed_all(seed)
+    fg_dict = OmegaConf.to_container(config, resolve=True)
     if args.train:
+        run_id = wandb.util.generate_id()
+        print(f"Starting a new wandb run with id {run_id}")
+        wandb.init(
+            # set the wandb project where this run will be logged
+            project="Diffusion_AN",
+            config=fg_dict,
+            tags=["VAE_understanding"],
+        )
         print('Training...')
         train(config)
     if args.domain_adaptation:

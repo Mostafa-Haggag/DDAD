@@ -4,6 +4,8 @@ import torch
 from unet import *
 from dataset import *
 from visualize import *
+from tqdm import tqdm
+
 from anomaly_map import *
 from metrics import *
 from feature_extractor import *
@@ -12,17 +14,15 @@ os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,2"
 
 class DDAD:
     def __init__(self, unet, config) -> None:
-        self.test_dataset = Dataset_maker(
-            root= config.data.data_dir,
-            category=config.data.category,
-            config = config,
-            is_train=False,
+        self.test_dataset = Dataset_maker_test(
+            root=config.data.data_dir,
+            config=config,
         )
         self.testloader = torch.utils.data.DataLoader(
             self.test_dataset,
-            batch_size= config.data.test_batch_size,
+            batch_size=config.data.test_batch_size,
             shuffle=False,
-            num_workers= config.model.num_workers,
+            num_workers=config.model.num_workers,
             drop_last=False,
         )
         self.unet = unet
@@ -46,7 +46,7 @@ class DDAD:
 
 
         with torch.no_grad():
-            for input, gt, labels in self.testloader:
+            for input, gt, labels in tqdm(self.testloader):
                 input = input.to(self.config.model.device)
                 x0 = self.reconstruction(input, input, self.config.model.w)[-1]
                 anomaly_map = heat_map(x0, input, feature_extractor, self.config)
