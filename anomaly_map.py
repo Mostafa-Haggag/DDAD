@@ -27,6 +27,9 @@ def heat_map(output, target, FE, config):
     target = target.to(config.model.device)
 
     i_d = pixel_distance(output, target)
+    # pixel_distance computes the mean squared difference between output and target.
+
+    # you pass your feature extracture  with the output image and the target image
     f_d = feature_distance((output),  (target), FE, config)
     f_d = torch.Tensor(f_d).to(config.model.device)
 
@@ -54,17 +57,22 @@ def feature_distance(output, target, FE, config):
     Feature distance between output and target
     '''
     FE.eval()
+    # turn it to eval mode
     transform = transforms.Compose([
             transforms.Lambda(lambda t: (t + 1) / (2)),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
     target = transform(target)
     output = transform(output)
+    # you transformed everything to the same thing !
     inputs_features = FE(target)
     output_features = FE(output)
-    out_size = config.data.image_size
+    # after the domain adaptation
+    out_size = config.data.image_size # you create a heamap the same size as image
+    # according to the batch
     anomaly_map = torch.zeros([inputs_features[0].shape[0] ,1 ,out_size, out_size]).to(config.model.device)
     for i in range(len(inputs_features)):
+        # iterate over the batch ???
         if i == 0:
             continue
         a_map = 1 - F.cosine_similarity(patchify(inputs_features[i]), patchify(output_features[i]))
