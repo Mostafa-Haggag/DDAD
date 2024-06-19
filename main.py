@@ -64,10 +64,10 @@ def parse_args():
                                 default= os.path.join(os.path.dirname(os.path.abspath(__file__)),'config.yaml'), 
                                 help='config file')
     cmdline_parser.add_argument('--train', 
-                                default= False,
+                                default= True,
                                 help='Train the diffusion model')
     cmdline_parser.add_argument('--detection', 
-                                default= True,
+                                default= False,
                                 help='Detection anomalies')
     cmdline_parser.add_argument('--domain_adaptation', 
                                 default= False,
